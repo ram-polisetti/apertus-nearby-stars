@@ -242,3 +242,23 @@ LLM mode, against a local mock OpenAI-compatible endpoint on :9999:
 - Test container stopped and removed afterwards; the /tmp test copy was
   deleted. The iMac's own stacks (Immich, Nextcloud AIO) were untouched
   and healthy throughout.
+
+## Step 9: Publish and submission prep (done)
+
+- GitHub repo created with `gh` and pushed:
+  https://github.com/ram-polisetti/apertus-nearby-stars
+  Public, default branch `main`. GitHub detects the licence as
+  Apache-2.0 (verified via the API and on the repo page, which also
+  renders the project README). Root contents: README.md, LICENSE,
+  Makefile, BUILDLOG.md, rC_Report.pdf, track_2b/ (with
+  technical_report.md, rC_Report.pdf, Dockerfile, src/, data/).
+- Video script written to ~/workspace/your_files/apertus-video-script.md
+  (timed sections, second ranges, on-screen action plus spoken lines,
+  about 1:55 at a natural pace, one-take friendly).
+- Submission fields pre-filled in
+  ~/workspace/your_files/apertus-submission-fields.md: track 2B, repo
+  URL, report filename rC_Report.pdf (4 pages), project descriptions,
+  contact, architecture. Only the demo video URL is open; the form
+  itself was NOT submitted.
+- Em-dash sweep repeated over all repo text after these edits,
+  including this log: zero em dashes remain in the repository.
