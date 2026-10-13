@@ -20,7 +20,10 @@ facts given. If no model endpoint is configured, or the call fails, a
 deterministic fallback answers from the same facts, so the app is
 fully functional offline. The headline result: every factual claim the
 app makes can be traced to a row of the Gaia extract, whether or not
-the language model is in the loop.
+the language model is in the loop. The questions are answered over a
+3D map of the same stars: when an answer is about one star, the camera
+flies to it, a line from the Sun shows its distance, and a plain-words
+panel explains what kind of star it is.
 
 ## 2. Architecture
 
@@ -34,7 +37,10 @@ library only, plus a single-page web UI. Components:
    closest stars, brightest stars, hottest stars, count within a given
    distance (light years or parsecs), and lookup of a named star. It
    returns a facts text plus a ready-made plain answer built from the
-   same facts.
+   same facts, and, when the answer centres on one star, that star's
+   identity so the UI can fly to it. A big-picture reference layer
+   (Section 4) is checked first, so questions the local data cannot
+   answer are not mistaken for dataset questions.
 3. **Phrasing (optional).** If `LLM_BASE_URL` is set, the facts and
    the question are sent to an OpenAI-compatible Apertus endpoint. The
    response replaces the wording only; the JSON reply also carries the
@@ -42,7 +48,38 @@ library only, plus a single-page web UI. Components:
    any answer can be audited.
 4. **HTTP layer.** `GET /` serves the UI, `POST /ask` takes
    `{"question": ...}`, `GET /health` reports dataset size and whether
-   an LLM is configured.
+   an LLM is configured, and `GET /stars.json` serves every star with
+   its computed 3D position for the map.
+
+### The 3D star map
+
+The UI opens on a 3D map of all 1,113 stars at their real positions.
+Positions are computed server-side from each star's right ascension,
+declination and parallax distance (x toward RA 0h on the celestial
+equator, y toward the north celestial pole, z toward RA 6h), in light
+years, with the Sun at the origin and labelled "You are here". Star
+colours are mapped from the Gaia BP-RP colour index (blue-white to
+red) and point sizes from the measured G magnitude. Faint rings mark
+10, 25 and 50 light years. The map is rendered with Three.js (r128,
+MIT licence), vendored into the repository and served by the app
+itself, so it needs no CDN and works air-gapped; the only dependency
+story is unchanged, because the Python side still uses nothing outside
+the standard library.
+
+Interaction follows the questions. When a `/ask` reply names a focus
+star (a named-star lookup, or the first star of a closest, brightest
+or hottest answer), the camera flies smoothly to that star over about
+two seconds, a ring highlights it, and a line is drawn from the Sun to
+the star, labelled with its distance in light years. A "What it is"
+panel shows the star's distance (light years and parsecs), its Gaia G
+magnitude, its surface temperature where GSP-Phot provides one, and a
+spectral class (O, B, A, F, G, K, M) estimated from temperature, or
+from BP-RP when no temperature exists, each class with a one-line
+plain description (an M star is "a red dwarf, small and cool, the
+most common kind of star in the galaxy"; a G star is "a sun-like
+yellow star"). General answers (counts, reference answers) keep the
+whole-map view. The map also turns slowly when idle, and supports
+drag-to-orbit and scroll-to-zoom.
 
 The container (`track_2b/Dockerfile`, `python:3.12-slim`) installs
 nothing: there are no third-party dependencies, so the build cannot
@@ -131,6 +168,22 @@ size is about 208 KB against a 100 MB limit. Licence: the derived
 dataset is released under CDLA-Permissive-2.0; the underlying
 measurements are ESA Gaia DR3 (citation in the References).
 
+Alongside the dataset sit two small, clearly labelled reference
+layers, both honest about not being Gaia measurements. The first is
+the reference table of textbook distances for the seven bright stars
+above. The second is a big-picture set answering the questions every
+beginner asks first and no 49 light year dataset can answer from its
+own rows: how many stars the Milky Way holds (an estimate of roughly
+100 to 400 billion, from the galaxy's mass, not a count), how big the
+Milky Way is (about 100,000 light years across), the nearest large
+galaxy (Andromeda, about 2.5 million light years), how many stars the
+naked eye can see (a few thousand), what a light year is (about 9.46
+trillion kilometres), the age of the universe (about 13.8 billion
+years), and the distances to the Moon (about 1.3 light-seconds) and
+the Sun (about 8.3 light-minutes, 1 AU). Each answer is one to three
+plain sentences, states that it is an estimate or textbook value
+where that applies, and points back to the local map where natural.
+
 ## 5. Evaluation
 
 Evaluation here is factual correctness against the dataset itself,
@@ -147,6 +200,8 @@ Sample results, fallback mode (answers shortened only where marked):
 | How far is Tau Ceti? | "Tau Ceti is 11.9 light years away; apparent magnitude 3.3 in the Gaia G band." | CSV row: 11.91 ly |
 | How far is Vega? | Explains Vega is too bright for Gaia in this extract and is not in the dataset; textbook distance about 25 ly | Honest non-coverage, clearly labelled |
 | How many stars are within 10 light years? | "There are 8 stars in this Gaia DR3 dataset within 10 light years of the Sun." | Direct count over the CSV: 8 |
+| How many stars are in the Milky Way galaxy? | Reference answer: an estimated 100 to 400 billion stars, about 200 billion commonly quoted, from the galaxy's mass; points back to the 1,113 local stars | Big-picture reference layer, checked before the count intent so it is not misread as a dataset count |
+| How far is Tau Ceti? (3D behaviour) | Answer plus a `focus` object; the map flies to Tau Ceti, draws the Sun-to-star line labelled 11.9 light years, and opens the "What it is" panel (class G from its BP-RP colour, since GSP-Phot has no temperature for it) | Verified in a headless browser against the running app; position norm equals the CSV distance |
 | Which nearby stars are brightest? | Top 5 by Gaia G magnitude, plus a warning that Gaia's Sirius value (8.5) is saturated and far too faint | Magnitudes from the CSV; the warning is the honest part |
 
 | Setup | Test | Result |
@@ -199,10 +254,10 @@ answer against the `facts` field the API returns.
 ## 8. Next steps
 
 With another month: widen the extract (more stars, proper motions so
-"how fast is it moving?" works), add a sky-position view ("what is
-near the Sun in the direction of Orion?"), evaluate Apertus phrasing
-against the fallback on a fixed question set with human raters, and
-publish the prepared dataset on Hugging Face with a dataset card.
+"how fast is it moving?" works), let users click a star on the map to
+ask about it, evaluate Apertus phrasing against the fallback on a
+fixed question set with human raters, and publish the prepared
+dataset on Hugging Face with a dataset card.
 
 ## References
 

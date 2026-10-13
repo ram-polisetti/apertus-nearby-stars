@@ -262,3 +262,80 @@ LLM mode, against a local mock OpenAI-compatible endpoint on :9999:
   itself was NOT submitted.
 - Em-dash sweep repeated over all repo text after these edits,
   including this log: zero em dashes remain in the repository.
+
+## Step 10: 3D star map upgrade (2026-10-13 evening, rC's design)
+
+rC asked for the app to become a 3D model of the neighbourhood: ask a
+question, the camera zooms to that star, a line from Earth shows its
+distance, and a panel explains what the star is. Built as follows:
+
+- **Positions.** `src/app.py` now computes a 3D position per star from
+  RA, Dec and distance (light years, Sun at origin: x toward RA 0h on
+  the equator, y toward the north celestial pole, z toward RA 6h) and
+  serves them at `GET /stars.json` (1,113 stars, compact keys).
+  Verified: the norm of Tau Ceti's xyz equals its CSV distance (11.91).
+- **Library.** Three.js r128 (MIT) downloaded once from cdnjs and
+  vendored to `src/static/three.min.js` (603 KB), served by the app at
+  `/three.min.js`. No CDN or network at runtime; air-gapped story
+  unchanged. The Python side remains standard library only.
+- **Page.** `src/static/index.html` rewritten: full-screen canvas,
+  question box and answer as overlays, info panel on the right. Stars
+  are shader points coloured from BP-RP (blue-white to red) with sizes
+  from G magnitude (pixel size clamped so close-ups stay points, not
+  blobs); the Sun sits at the origin labelled "You are here (the
+  Sun)"; faint rings mark 10, 25 and 50 ly. Custom orbit controls
+  (drag, scroll), slow idle auto-rotation. Labels are text sprites
+  rescaled every frame to a constant on-screen size at any zoom.
+- **Question to flight.** `/ask` replies now carry a `focus` object
+  (star identity, distance in ly and pc, magnitude, temperature,
+  colour, xyz) whenever the answer centres on one star: named-star
+  lookups, and the first star of closest, brightest and hottest
+  answers. The page flies the camera to it over about 2.1 s
+  (easeInOutCubic), draws a line from the Sun to the star labelled
+  with its distance, rings the star with a pulsing halo, and opens
+  the "What it is" panel: distance, Gaia G brightness, temperature
+  when available, and a spectral class (O/B/A/F/G/K/M) estimated from
+  temperature, or from BP-RP when no temperature exists (Tau Ceti:
+  class G from colour, matching its known type), each class with a
+  one-line plain description. General answers keep the overview;
+  closing the panel flies back.
+- **A bug found and fixed on the way:** the router matched on the raw
+  path, so `/?q=...` returned 404. Routing now strips the query
+  string, and the page accepts a `?q=` deep link that asks its
+  question on load (used for the verification screenshots and handy
+  for the demo video).
+- **Flight clock fix:** flight timing uses `performance.now()` inside
+  the render loop instead of the rAF callback timestamp, so flight
+  math runs on one clock everywhere (headless virtual time exposed
+  the mismatch; real browsers share the origin, but one clock is
+  robust by construction).
+- **Visual verification (headless Chromium, SwiftShader):** home view
+  (star field, rings, Sun label), Tau Ceti flight (line, 11.9 light
+  years label, halo, class G panel), Proxima Centauri flight (4.3
+  light years label, class M red dwarf panel, 2829 K). Label
+  placement tuned twice: labels first rendered at world scale (they
+  filled the screen when zoomed), then the distance label moved to
+  78 percent along the line with a small lift so it stays readable.
+
+## Step 11: Big-picture reference answers (2026-10-13 evening)
+
+rC tested the preview, asked "how many stars are in the Milky Way
+galaxy" and got no real answer (the count intent claimed it with a
+dataset answer). Added a `big_picture()` reference layer in
+`src/app.py`, checked BEFORE the local intents, in the same spirit as
+REFERENCE_ONLY: sourced textbook values and estimates, plain words,
+honest about being estimates, each pointing back to the local map
+where natural. Covers: Milky Way star count (about 100 to 400
+billion, roughly 200 billion commonly quoted, from the galaxy's mass),
+Milky Way size (about 100,000 ly across), nearest large galaxy
+(Andromeda, about 2.5 million ly), naked-eye stars (about 2,500 at
+once on a dark night, a few thousand in total), what a light year is
+(about 9.46 trillion km), the age of the universe (about 13.8 billion
+years), the Moon (384,000 km, about 1.3 light-seconds) and the Sun
+(1 AU, about 8.3 light-minutes). All eight verified live against the
+running app, and the dataset intents (count within 10 ly = 8, closest,
+Tau Ceti) re-verified unchanged. The same logic is ported into the
+static Pages preview's client-side fallback. The technical report
+describes the layer in Section 4 and gains a 3D map subsection in
+Section 2; the regenerated `rC_Report.pdf` is 6 pages (the maximum),
+in both the track folder and the repository root.

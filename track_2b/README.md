@@ -26,6 +26,23 @@ brightness value for Sirius is also wrong in this extract (detector
 saturation), and the "brightest stars" answer carries a warning about
 that.
 
+## The 3D star map
+
+The app opens on a 3D map of all 1,113 stars at their real positions,
+computed from their Gaia right ascension, declination and parallax,
+with the Sun at the centre ("You are here"). Star colours come from
+the Gaia BP-RP colour index (blue-white through to red) and star sizes
+from their measured brightness. The map turns slowly when idle; drag
+to orbit, scroll to zoom. When an answer is about one star (a named
+star, the closest, the brightest), the camera flies to that star, a
+line is drawn from the Sun to the star labelled with its distance, and
+a "What it is" panel explains the star in plain words: its distance in
+light years and parsecs, its brightness, its temperature when Gaia
+measured one, and its spectral class (O, B, A, F, G, K or M) estimated
+from temperature or colour, each with a one-line plain description.
+The 3D library is Three.js (MIT licence), vendored into the repository
+and served by the app itself, so the map works with no network at all.
+
 ## Run it
 
 Judges: from a clean checkout of this repository, at the repository
@@ -103,9 +120,10 @@ institutions participating in the Gaia Multilateral Agreement.
 
 | Path | What it is |
 | --- | --- |
-| `track_2b/src/app.py` | The whole app: retrieval, fallback, LLM phrasing, HTTP server |
+| `track_2b/src/app.py` | The whole app: retrieval, fallback, LLM phrasing, HTTP server (`/`, `/ask`, `/health`, `/stars.json`) |
 | `track_2b/src/prepare_data.py` | Builds `nearby_stars.csv` from the raw TAP result |
-| `track_2b/src/static/index.html` | The single-page web UI |
+| `track_2b/src/static/index.html` | The single-page web UI with the 3D star map |
+| `track_2b/src/static/three.min.js` | Three.js r128 (MIT), vendored so the map needs no network |
 | `track_2b/data/` | Raw and prepared Gaia DR3 extracts (about 208 KB) |
 | `track_2b/Dockerfile`, `track_2b/Makefile` | Container build and `make run` |
 | `track_2b/technical_report.md` | The technical report (PDF: `rC_Report.pdf`) |
