@@ -1,6 +1,6 @@
-# BUILDLOG — Hack Apertus, Track 2B "Own Project"
+# BUILDLOG: Hack Apertus, Track 2B "Own Project"
 
-Project: **Nearby Stars, Plain Words** — a Dockerized web app that answers
+Project: **Nearby Stars, Plain Words**, a Dockerized web app that answers
 beginner astronomy questions from a real Gaia DR3 nearby-stars dataset, with
 the Apertus LLM (via an OpenAI-compatible endpoint set by env vars) phrasing
 plain-language answers, and a deterministic data-only fallback when no LLM is
@@ -9,7 +9,7 @@ configured.
 Team name for the report file: `rC` (solo, Ram Charan Polisetti).
 Deadline: Fri Oct 16, 2026, 06:00 AM EDT. Build started Tue Oct 13, 2026 (EDT).
 
-## Step 0 — Requirements and template (done)
+## Step 0: Requirements and template (done)
 
 - Read `~/workspace/your_files/hackathon-requirements-oct-2026.md` section 1 and
   the template's own README files. Key constraints captured:
@@ -40,17 +40,17 @@ Deadline: Fri Oct 16, 2026, 06:00 AM EDT. Build started Tue Oct 13, 2026 (EDT).
 - Docker is NOT available on this build VM (`docker: command not found`).
   Docker verification will be done on rC's iMac over SSH (see TOOLS.md).
 
-## Step 1 — Template pruning (done)
+## Step 1: Template pruning (done)
 
 - Deleted `track_1a/`, `track_1b/`, `track_2a/`. Kept `track_2b/` as-is.
 - Root README replaced later with the project README; the template LICENSE
   (Apache-2.0) is kept.
 
-## Step 2 — Data: Gaia DR3 query (in progress)
+## Step 2: Data: Gaia DR3 query (in progress)
 
 See data section in the technical report for the exact ADQL and citation.
 
-## Step 2 — Data (done)
+## Step 2: Data (done)
 
 - ADQL sent to the public Gaia TAP sync service
   (https://gea.esac.esa.int/tap-server/tap/sync), first try succeeded:
@@ -78,7 +78,7 @@ See data section in the technical report for the exact ADQL and citation.
   extract is 8.5 (true value about -1.5); bright-star photometry saturates.
   The "brightest" answer carries a warning sentence about this.
 
-## Step 3 — App (done)
+## Step 3: App (done)
 
 - `track_2b/src/app.py`: Python 3 standard library only (http.server).
   Endpoints: `GET /` (single-page UI in `src/static/index.html`),
@@ -97,7 +97,7 @@ See data section in the technical report for the exact ADQL and citation.
 - Makefiles: `track_2b/Makefile` builds and runs the container, forwarding
   the three LLM env vars; root `Makefile` delegates into track_2b.
 
-## Step 4 — Native tests (done, this VM)
+## Step 4: Native tests (done, this VM)
 
 Fallback mode (no env vars), server on port 8000:
 - GET /health -> {"status": "ok", "stars": 1113, "max_distance_ly": 49.4,
@@ -117,9 +117,9 @@ LLM mode, against a local mock OpenAI-compatible endpoint on :9999:
   the test shell itself and killed the first mock-test run. Re-ran with
   PID-based cleanup; no project files affected.
 
-## Step 5 — Docker test (in progress, on the iMac)
+## Step 5: Docker test (in progress, on the iMac)
 
-## Step 5 — Docker test (done, on the iMac)
+## Step 5: Docker test (done, on the iMac)
 
 - No Docker on this VM, so the project was copied to /tmp/apertus-test on
   rC's iMac and tested there.
@@ -135,7 +135,7 @@ LLM mode, against a local mock OpenAI-compatible endpoint on :9999:
   paused (see pivot note). It is a throwaway test copy in /tmp, not the
   submission.
 
-## PIVOT — 2026-10-13 ~14:20 EDT: building paused by rC
+## PIVOT: 2026-10-13 ~14:20 EDT: building paused by rC
 
 - rC asked for a brainstorm BEFORE the project is chosen. All building,
   publishing and submitting stopped. Nothing was pushed to GitHub; no
@@ -164,14 +164,14 @@ LLM mode, against a local mock OpenAI-compatible endpoint on :9999:
   1A bias red-team (Candidate 2) that plays to rC's evaluation background.
 - No building, publishing, or pushing was done in this phase.
 
-## RESUMED — 2026-10-13 ~17:26 EDT: rC picked Candidate 7
+## RESUMED: 2026-10-13 ~17:26 EDT: rC picked Candidate 7
 
 - rC chose "Nearby Stars, Plain Words" (Track 2B). Remaining work: repo
   hygiene, technical report + rC_Report.pdf, clean-checkout Docker
   re-verification, GitHub publish, video script, submission-fields prep.
   The hackathon form itself is NOT submitted (demo video URL still needed).
 
-## Step 6 — Repo hygiene (done)
+## Step 6: Repo hygiene (done)
 
 - Confirmed layout: only `track_2b/` remains, under its exact template name;
   other track folders already deleted (Step 1). Root `Makefile` delegates
@@ -190,7 +190,7 @@ LLM mode, against a local mock OpenAI-compatible endpoint on :9999:
   carries the same project README so the project root folder is
   self-describing.
 
-## Step 7 — Technical report and PDF (done)
+## Step 7: Technical report and PDF (done)
 
 - `track_2b/technical_report.md` rewritten in full, following the template
   stub's section structure: Summary, Architecture (with the mandatory
@@ -213,3 +213,32 @@ LLM mode, against a local mock OpenAI-compatible endpoint on :9999:
   footer. A copy sits at the repository root (per the finish-task
   instructions) and in `track_2b/` (per the track README instruction to
   upload the PDF into the track directory).
+
+## Step 8: Clean-checkout Docker re-verification (done, on the iMac)
+
+- Method: `git archive HEAD` of the final committed tree, copied to the
+  iMac, extracted fresh at /tmp/apertus-clean. Nothing from the working
+  tree or the old Step 5 test copy leaked into the test.
+- Access note: this build VM runs exec as root, whose passwd home is
+  /root, so plain `ssh imac` never read /home/hatch/.ssh/config (the
+  alias + tailnet ProxyCommand live there) and direct connections were
+  reset by the egress proxy. Working form, for future runs:
+  `ssh -F /home/hatch/.ssh/config -i /home/hatch/.ssh/id_ed25519
+  -o UserKnownHostsFile=<file> imac` (iMac host key fingerprint
+  SHA256:p1DF1zvB7ZwO9FNXzVIvRXrMPJ++9OhOmMm23uB/IV8, accepted once via
+  accept-new on this documented path).
+- First `make run` attempt failed at `docker run` (Error 125): the
+  leftover Step 5 test container (8e7d7763544a, up 3 hours) still held
+  port 8000. It was stopped and removed; this was test litter, not a
+  project fault.
+- Second attempt, `make run` from the repository root of the clean
+  checkout: image built (nearby-stars-plain-words:latest), container
+  started, and from the iMac itself:
+  - GET /health -> {"status": "ok", "stars": 1113,
+    "max_distance_ly": 49.4, "llm_configured": false}
+  - POST /ask "How far is Tau Ceti?" -> "Tau Ceti is 11.9 light years
+    away; apparent magnitude 3.3 in the Gaia G band.",
+    source "data-fallback"
+- Test container stopped and removed afterwards; the /tmp test copy was
+  deleted. The iMac's own stacks (Immich, Nextcloud AIO) were untouched
+  and healthy throughout.
