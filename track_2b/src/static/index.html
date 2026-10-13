@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nearby Stars, Plain Words</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #0b1026; color: #eef;
+         margin: 0; display: flex; justify-content: center; }
+  main { max-width: 640px; width: 92%; padding: 2rem 0 3rem; }
+  h1 { font-size: 1.6rem; margin-bottom: .2rem; }
+  p.sub { color: #aab; margin-top: 0; }
+  form { display: flex; gap: .5rem; margin: 1rem 0; }
+  input { flex: 1; padding: .6rem; border-radius: 6px; border: 1px solid #445;
+          background: #141a38; color: #eef; font-size: 1rem; }
+  button { padding: .6rem 1rem; border: 0; border-radius: 6px;
+           background: #f5b942; color: #141414; font-weight: 600; cursor: pointer; }
+  .chips button { background: #232a52; color: #cdd; font-weight: 400;
+                  margin: 0 .3rem .4rem 0; padding: .35rem .7rem; }
+  #answer { background: #141a38; border: 1px solid #334; border-radius: 8px;
+            padding: 1rem; min-height: 3rem; white-space: pre-wrap; }
+  #meta { color: #889; font-size: .85rem; margin-top: .5rem; }
+  footer { color: #667; font-size: .8rem; margin-top: 2rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Nearby Stars, Plain Words</h1>
+  <p class="sub">Ask about the stars closest to home. Every answer comes from
+  real measurements by the Gaia space telescope (Gaia DR3).</p>
+  <form id="ask">
+    <input id="q" type="text" placeholder="Try: how far is Sirius?" autocomplete="off">
+    <button type="submit">Ask</button>
+  </form>
+  <div class="chips">
+    <button data-q="What is the closest star to us?">Closest star</button>
+    <button data-q="Which nearby stars are brightest?">Brightest nearby</button>
+    <button data-q="How far is Vega?">How far is Vega?</button>
+    <button data-q="How far is TRAPPIST-1?">TRAPPIST-1</button>
+    <button data-q="How many stars are within 10 light years?">Within 10 ly</button>
+  </div>
+  <div id="answer">Your answer will appear here.</div>
+  <div id="meta"></div>
+  <footer>Data: ESA Gaia DR3 nearby stars (parallax 66 mas or more).
+  Answers are phrased by the Apertus model when an endpoint is configured,
+  and answered directly from the data otherwise.</footer>
+</main>
+<script>
+const form = document.getElementById('ask');
+const input = document.getElementById('q');
+const answerBox = document.getElementById('answer');
+const meta = document.getElementById('meta');
+async function ask(question) {
+  answerBox.textContent = 'Looking it up in the Gaia data...';
+  meta.textContent = '';
+  try {
+    const r = await fetch('/ask', {method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({question})});
+    const d = await r.json();
+    answerBox.textContent = d.answer || d.error || 'No answer.';
+    meta.textContent = d.source === 'apertus'
+      ? 'Phrased by Apertus from retrieved Gaia facts.'
+      : 'Answered directly from the Gaia data (no model configured).';
+  } catch (e) {
+    answerBox.textContent = 'Something went wrong. Please try again.';
+  }
+}
+form.addEventListener('submit', e => { e.preventDefault(); ask(input.value); });
+document.querySelectorAll('.chips button').forEach(b =>
+  b.addEventListener('click', () => { input.value = b.dataset.q; ask(b.dataset.q); }));
+</script>
+</body>
+</html>

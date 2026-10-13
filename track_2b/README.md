@@ -1,103 +1,127 @@
-# Track 2 B: Own Project
+# Nearby Stars, Plain Words
 
-Bring your own idea and build a working Apertus prototype that tackles a problem you care about — any domain, any use case. The project must be new, started within the hackathon period.
+**Hack Apertus, Track 2B (Own Project). Team rC (solo): Ram Charan Polisetti.**
 
-Submissions must use the Apertus model family.
-For Track 2 this means that submitted solutions must be built with Apertus. Other open-weights models can be used to support development, e.g. as automatic judges during evaluation. Their role must be clearly described in the submission report.
+A small web app that answers beginner astronomy questions from a real
+dataset: the 1,113 stars nearest to the Sun, measured by the Gaia space
+telescope (Gaia DR3). You ask things like "What is the closest star?",
+"How far is Tau Ceti?" or "How many stars are within 10 light years?",
+and the app looks the facts up in the data first. Only then, if an
+Apertus endpoint is configured, does the language model phrase the
+answer in plain words. The model never invents numbers: it receives the
+retrieved facts and a strict instruction to use only those facts.
 
-💬 In case you have questions, join the conversation on [Discord](https://discord.gg/hack-apertus) or send an email to “hello@hackapertus.ch”
+If no endpoint is configured, or the endpoint call fails, the app still
+answers. A deterministic fallback builds the answer directly from the
+same facts. That makes the app fully usable offline and in an
+air-gapped deployment, which is the point of the design: the language
+model improves the wording, never the truth.
 
----
+The honest edges of the data are part of the app. Gaia cannot measure
+the very brightest stars accurately, so seven famous names (Vega, Alpha
+Centauri, Procyon, Altair, Pollux, Arcturus, Capella) are not in this
+Gaia extract. The app says so plainly and gives their textbook
+(Hipparcos) distances from a clearly labelled reference table. Gaia's
+brightness value for Sirius is also wrong in this extract (detector
+saturation), and the "brightest stars" answer carries a warning about
+that.
 
-## 🔧 Resources & Tools
+## Run it
 
-Check our resources & tools page for detailed information:
-https://hackapertus.notion.site/resources-tools
+Judges: from a clean checkout of this repository, at the repository
+root (or inside `track_2b/`), run:
 
-| Models           | URL                                      |
-|------------------|------------------------------------------|
-| Apertus v1.5 8B  | [huggingface.co/swiss-ai/Apertus-v1.5-8B](https://huggingface.co/swiss-ai/Apertus-v1.5-8B)  |
-| Apertus v1.5 70B | [huggingface.co/swiss-ai/Apertus-v1.5-70B](https://huggingface.co/swiss-ai/Apertus-v1.5-70B) |
+```bash
+make run
+```
 
+This builds a Docker image (`python:3.12-slim`, no packages installed;
+the app is Python 3 standard library only) and starts the app on port
+8000. Then open http://localhost:8000 or use the API:
 
-## Target architecture (mandatory)
+```bash
+curl http://localhost:8000/health
+curl -X POST http://localhost:8000/ask \
+  -H 'Content-Type: application/json' \
+  -d '{"question": "How far is Tau Ceti?"}'
+```
 
-Whatever you build in Track 2B must be deployable in one of these three architectures:
+To have answers phrased by Apertus, set the three environment variables
+before `make run` (the Makefile forwards them into the container):
 
-- **a) On-premise** — on the organisation's own infrastructure, under its own administration.
-- **b) Air-gapped** — with no external network connection at runtime.
-- **c) Sovereign Swiss cloud** — on a cloud platform operated in Switzerland, under Swiss jurisdiction, with Swiss data residency.
+```bash
+export LLM_NAME=swiss-ai/Apertus-v1.5-8B
+export LLM_BASE_URL=https://your-apertus-endpoint/v1
+export LLM_API_KEY=your-key
+make run
+```
 
----
+`LLM_BASE_URL` must be an OpenAI-compatible endpoint (the app POSTs to
+`<LLM_BASE_URL>/chat/completions`). Leave all three unset to run the
+data-only fallback. Every `/ask` response says which path answered, in
+its `source` field: `apertus` or `data-fallback`, and includes the
+retrieved `facts`.
 
-## Data
+Without Docker, the app also runs directly:
+`python3 track_2b/src/app.py` (port 8000).
 
-The `data/` directory must not exceed 100 MB.
+## The data
 
----
+Source: ESA Gaia DR3, retrieved from the public Gaia TAP service
+(https://gea.esac.esa.int/tap-server/tap/sync) with this ADQL query:
 
-## 📦 Submission Requirements & Deliverables
+```sql
+SELECT TOP 2000 source_id, ra, dec, parallax, parallax_over_error,
+phot_g_mean_mag, bp_rp, teff_gspphot FROM gaiadr3.gaia_source
+WHERE parallax >= 66 AND parallax_over_error > 10
+ORDER BY parallax DESC
+```
 
-❗️ Submissions are not handled on Devpost but via this URL only:
-http://hackapertus.ch/online-hack/submissions
+The quality cut (parallax_over_error > 10) leaves 1,113 stars, all
+within about 15 parsecs (49.4 light years). `track_2b/src/prepare_data.py`
+computes distances from parallax (distance = 1000 / parallax_mas
+parsecs, times 3.26156 for light years) and attaches common names to 14
+well-known stars. Each name had to pass two checks: a Gaia source
+within 0.15 degrees of the star's published position, and a
+Gaia-derived distance within 15 percent of the published distance.
+Eleven candidates failed and were dropped, mostly the very brightest
+stars, which is a known Gaia limitation. The raw TAP result is kept in
+`track_2b/data/nearby_stars_raw.csv`; the app uses
+`track_2b/data/nearby_stars.csv`. Total data size: about 208 KB.
 
-The submission must: 
-1. follow the template repo and include all prerequisite files and definitions
-2. follow the specified input/output formats
-3. run in a Docker container, launched with `make run` from the root of the project
-4. run end-to-end when judges try to run it
+Dataset citation: ESA Gaia mission, Data Release 3. Gaia Collaboration
+et al., "Gaia Data Release 3: Summary of the content and survey
+properties", Astronomy & Astrophysics 674, A1 (2023). This work has
+made use of data from the European Space Agency (ESA) mission Gaia
+(https://www.cosmos.esa.int/gaia), processed by the Gaia Data
+Processing and Analysis Consortium (DPAC,
+https://www.cosmos.esa.int/web/gaia/dpac/consortium). Funding for the
+DPAC has been provided by national institutions, in particular the
+institutions participating in the Gaia Multilateral Agreement.
 
-### Git repo (URL)
-- Create your repo from this template (**Use this template**) and work in the `track_2b/` challenge directory. Delete the other track challenge directories.
-- Keep `track_2b/` as it is: don't rename it or move its files.
-- Set the repo to PUBLIC (Settings --> Collaborators --> Manage Visibility)
-- Submit the URL of YOUR Git repo.
+## Layout
 
-### Technical Report (pdf)
-- Update [technical_report.md](technical_report.md) in this repository with all the details for your submission.
-- Upload a pdf of your technical report to this directory, named as `TeamName_Report.pdf`.
-- Format: pdf, max. 6 pages w/o references
-- Submit the pdf of the technical report.
+| Path | What it is |
+| --- | --- |
+| `track_2b/src/app.py` | The whole app: retrieval, fallback, LLM phrasing, HTTP server |
+| `track_2b/src/prepare_data.py` | Builds `nearby_stars.csv` from the raw TAP result |
+| `track_2b/src/static/index.html` | The single-page web UI |
+| `track_2b/data/` | Raw and prepared Gaia DR3 extracts (about 208 KB) |
+| `track_2b/Dockerfile`, `track_2b/Makefile` | Container build and `make run` |
+| `track_2b/technical_report.md` | The technical report (PDF: `rC_Report.pdf`) |
 
-### Demo video (URL)
-- Max. 2 min demo video of your prototype
+## Sovereign deployment
 
-### Dataset (URL) - optional, depending on your project
-Submitted datasets must comply with our guidelines for responsibly sourced datasets.
+The project targets the on-premise and air-gapped architectures (see
+the technical report for the full section). In short: the container
+needs no network access at runtime. Point `LLM_BASE_URL` at an Apertus
+endpoint served on your own infrastructure (for example a local
+vLLM or SGLang deployment of the open Apertus weights), or unset it and
+run data-only. No question ever has to leave the building.
 
-- Create a user account on Hugging Face
-- Clone our dataset template on Hugging Face: https://huggingface.co/datasets/HackApertus/online_hack_template
-- Complete the dataset card with all required information
-- Upload your dataset. It should consist of the following components:
-    - evaluation dataset (i.e. individual test cases)
-    - model response dataset (i.e. the model response to each test case)
-    - metadata file (i.e. additional information about each test case; where relevant, this file must contain instance-level licensing information) 
-- Make sure your dataset access control is set to PUBLIC
-- Provide the URL of _your_ data set
+## Licence
 
-
----
-
-## ⚖️ Judging Criteria
-
-1. Purposeful use of AI
-2. Technical rigour
-3. Value, cost & scalability
-4. Sovereign deployability
-5. Implementation feasibility
-
-Judges use a Scale 0–5 per dimension.
-
----
-
-## Support
-
-**Licensing requirements**
-Please check our Terms & Conditions (6. What you build is open source):
-https://hackapertus.ch/terms-and-conditions
-
-## FAQ
-💡 https://hackapertus.ch/faq
-
-## Contact
-💬 In case you have questions, join the conversation on Discord or send an email to “hello@hackapertus.ch”
+Code: Apache License 2.0 (see `LICENSE`). Documentation: CC BY 4.0.
+The derived dataset in `track_2b/data/` is released under
+CDLA-Permissive-2.0; the underlying measurements are ESA Gaia DR3 data,
+used with the acknowledgement above.
