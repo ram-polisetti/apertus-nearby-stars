@@ -353,3 +353,19 @@ in both the track folder and the repository root.
   Tau Ceti?" returns focus Tau Ceti, 11.91 ly.
 - Test container stopped afterwards; nothing left on port 8000; the
   /tmp copy deleted. The iMac's own stacks were untouched.
+
+## Step 13: Video script and Pages preview check (2026-10-13 evening)
+
+- `~/workspace/your_files/apertus-video-script.md` rewritten around the
+  3D flight: opening on the turning map, Tau Ceti flight as the
+  centrepiece (line draw, 11.9 light years label, What it is panel),
+  Proxima hop, the Milky Way big-picture answer, panel close flying
+  back to the overview. Still about 1:55, one take, no em dashes.
+- Pages preview: `~/workspace/your_files/portfolio-site/nearby-stars/`
+  holds another agent's static Q&A preview (the pre-3D page), but the
+  portfolio-site folder is not a git checkout (no .git), so the
+  "preview committed and clean" gate could not be verified. Left
+  untouched, per instructions; the 3D static port (embedded data,
+  three.js, client-side fallback including the big-picture answers)
+  still needs to land there once that preview's publishing path is
+  confirmed.
