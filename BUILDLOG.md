@@ -339,3 +339,17 @@ static Pages preview's client-side fallback. The technical report
 describes the layer in Section 4 and gains a 3D map subsection in
 Section 2; the regenerated `rC_Report.pdf` is 6 pages (the maximum),
 in both the track folder and the repository root.
+
+## Step 12: Docker re-verification of the 3D build (done, on the iMac)
+
+- `git archive HEAD` (commit 69c84ed) extracted fresh at
+  /tmp/apertus-clean on the iMac; `make run` from the repository root
+  built the image and started the container.
+- Verified from the iMac itself: GET /health ok (1,113 stars);
+  GET / contains the 3D canvas; GET /three.min.js serves all 603,445
+  bytes of the vendored library; GET /stars.json returns 1,113 stars;
+  POST /ask "how many stars are in the Milky Way galaxy" returns the
+  big-picture reference answer inside Docker; POST /ask "How far is
+  Tau Ceti?" returns focus Tau Ceti, 11.91 ly.
+- Test container stopped afterwards; nothing left on port 8000; the
+  /tmp copy deleted. The iMac's own stacks were untouched.
